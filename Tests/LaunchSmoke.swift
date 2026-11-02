@@ -83,6 +83,9 @@ import ApplicationServices
             if CommandLine.arguments.contains("--screenshots") {
                 let application = try launch()
                 let app = AXUIElementCreateApplication(application.processIdentifier)
+                try wait("No responsive studio window") { window(app) != nil }
+                try wait("Sidebar is still loading") { guard let window = window(app) else { return false }; return nodes(window).contains { text($0) == "Dashboard" } }
+                if button("Later", in: app) != nil { try press("Later", in: app) }
                 let directory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("Build/WebsiteScreenshots")
                 try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
                 let captures = [("Dashboard", "Your sound. Every destination.", "dashboard"), (sections[0].0, sections[0].1, "mixer"), (sections[2].0, sections[2].1, "effects")]

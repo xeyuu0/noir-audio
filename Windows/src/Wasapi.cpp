@@ -94,7 +94,7 @@ void AudioHost::run(DeviceConfig config){
         core.silentClock=master->bus<0;core.baseLatency=double(master->frames)*1000/master->format.rate;
         for(auto& s:streams){for(auto [source,pair]:s->sources){auto& c=core.channels[source];c.connected=true;c.pair=pair*2;c.resampler.prepare(s->format.rate,Rate,std::max(int(s->frames*2),s->format.rate/80));}if(s->render){s->resampler.prepare(Rate,s->format.rate,std::min(8192,int(s->frames*3.*Rate/s->format.rate)+64));BYTE* data=nullptr;require(s->render->GetBuffer(s->frames,&data),"Prime output buffer");require(s->render->ReleaseBuffer(s->frames,AUDCLNT_BUFFERFLAGS_SILENT),"Prime silent output");}}
         if(WaitForSingleObject(stopEvent.get(),0)==WAIT_OBJECT_0){state=AudioState::Stopped;setMessage("Audio is stopped.");return;}
-        DWORD task=0;Handle mmcss;HANDLE scheduling=AvSetMmThreadCharacteristicsW(L"Pro Audio",&task);
+        DWORD task=0;HANDLE scheduling=AvSetMmThreadCharacteristicsW(L"Pro Audio",&task);
         struct Schedule {HANDLE h;~Schedule(){if(h)AvRevertMmThreadCharacteristics(h);}}schedule{scheduling};
         for(auto& s:streams)if(!s->master){require(s->client->Start(),"Start selected audio stream");s->started=true;}
         core.running=true;require(master->client->Start(),"Start audio clock");master->started=true;state=AudioState::Running;setMessage("Audio running · WASAPI shared mode · 48 kHz internal mix");
