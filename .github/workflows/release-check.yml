@@ -1,0 +1,67 @@
+name: Verify published Windows installer
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/release-check.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  installer:
+    runs-on: windows-2022
+    timeout-minutes: 8
+    steps:
+      - name: Download and verify the published installer
+        shell: pwsh
+        run: |
+          $installer = Join-Path $env:RUNNER_TEMP 'NOIR-Setup.exe'
+          Invoke-WebRequest 'https://noir-audio-orpin.vercel.app/downloads/NOIR-Audio-0.1.0-Windows-x64-Setup.exe' -OutFile $installer
+          $expected = 'f5e07608f3a6102a33beec2ec5a54a0c7449b6f07f65742ad522fc94fbaaec1d'
+          if ((Get-FileHash $installer -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Published installer bytes differ from the reviewed release' }
+          Write-Output 'PASS published installer SHA-256'
+      - name: Install, launch, upgrade and uninstall while preserving user data
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $installer = Join-Path $env:RUNNER_TEMP 'NOIR-Setup.exe'
+          $destination = Join-Path $env:RUNNER_TEMP 'NOIRInstallerCheck'
+          $exe = Join-Path $destination 'NOIR Audio.exe'
+          $expectedExe = '89e411ab9ed4138ae3514c8928982d204657c19c4b82a394ab611998d21ef8be'
+          $data = Join-Path $env:LOCALAPPDATA 'NOIR Audio'
+          New-Item -ItemType Directory -Path $data -Force | Out-Null
+          $keep = Join-Path $data 'installer-test-keep.txt'
+          Set-Content $keep 'preserve this user data'
+          function Install-Noir {
+            $p = Start-Process $installer -ArgumentList "/S /D=$destination" -PassThru
+            if (-not $p.WaitForExit(60000)) { $p.Kill(); throw 'Installer timed out' }
+            if ($p.ExitCode -ne 0) { throw "Installer failed: $($p.ExitCode)" }
+            if (-not (Test-Path $exe)) { throw 'Installed app missing' }
+            if ((Get-FileHash $exe -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expectedExe) { throw 'Installed app differs from the tested build' }
+            if (-not (Test-Path $keep)) { throw 'Installer deleted user data' }
+          }
+          Install-Noir
+          Write-Output 'PASS fresh per-user installation and exact executable hash'
+          $key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\NOIR Audio'
+          if (-not (Test-Path $key)) { throw 'Uninstall entry missing' }
+          $shortcut = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\NOIR Audio\NOIR Audio.lnk'
+          if (-not (Test-Path $shortcut)) { throw 'Start menu shortcut missing' }
+          $shell = New-Object -ComObject WScript.Shell
+          if ($shell.CreateShortcut($shortcut).TargetPath -ne $exe) { throw 'Start menu shortcut points to wrong app' }
+          Write-Output 'PASS Start menu shortcut and per-user uninstall registration'
+          $p = Start-Process $exe -ArgumentList '--ui-smoke' -PassThru
+          if (-not $p.WaitForExit(45000)) { $p.Kill(); throw 'Installed app launch timed out' }
+          Get-Content windows-ui-smoke.log
+          if ($p.ExitCode -ne 0) { throw "Installed app failed: $($p.ExitCode)" }
+          Write-Output 'PASS installed app launch and all nine pages'
+          Install-Noir
+          Write-Output 'PASS reinstall preserves executable and user data'
+          $uninstaller = Join-Path $destination 'Uninstall.exe'
+          $p = Start-Process $uninstaller -ArgumentList '/S' -PassThru
+          if (-not $p.WaitForExit(60000)) { $p.Kill(); throw 'Uninstaller timed out' }
+          $deadline = (Get-Date).AddSeconds(30)
+          while ((Test-Path $exe) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 200 }
+          if (Test-Path $exe) { throw 'Uninstaller left the app executable' }
+          if (Test-Path $key) { throw 'Uninstaller left its registry entry' }
+          if (Test-Path $shortcut) { throw 'Uninstaller left the shortcut' }
+          if ((Get-Content $keep -Raw).Trim() -ne 'preserve this user data') { throw 'Uninstaller changed user data' }
+          Write-Output 'PASS uninstall removes app and registration while preserving user data'
