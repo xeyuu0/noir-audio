@@ -1,0 +1,50 @@
+name: Build and validate NOIR Audio
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Configure native Windows x64 build
+        run: cmake -S . -B Build/windows -A x64
+      - name: Compile
+        run: cmake --build Build/windows --config Release --parallel 4
+      - name: DSP, sessions, recording and Media Foundation tests
+        run: ctest --test-dir Build/windows -C Release --output-on-failure
+      - name: Launch and navigate all nine native pages
+        shell: pwsh
+        run: |
+          $process = Start-Process -FilePath 'Build/windows/Windows/Release/NOIR Audio.exe' -ArgumentList '--ui-smoke' -PassThru
+          if (-not $process.WaitForExit(45000)) { $process.Kill(); throw 'Windows UI smoke test timed out' }
+          Get-Content windows-ui-smoke.log
+          if ($process.ExitCode -ne 0) { throw "Windows UI smoke test failed: $($process.ExitCode)" }
+      - name: Upload build and verification logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: NOIR-Windows-x64
+          path: |
+            Build/windows/Windows/Release/*.exe
+            Build/windows/Release/*.exe
+            Build/windows/Testing/Temporary/*.log
+            windows-ui-smoke.log
+          retention-days: 14
+  portable:
+    runs-on: macos-15
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - run: cmake -S . -B Build/portable -DCMAKE_BUILD_TYPE=Release
+      - run: cmake --build Build/portable --parallel 4
+      - run: ctest --test-dir Build/portable --output-on-failure

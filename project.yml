@@ -1,0 +1,45 @@
+name: NOIR Audio
+options:
+  bundleIdPrefix: audio.noir
+  deploymentTarget:
+    macOS: '14.2'
+settings:
+  base:
+    MACOSX_DEPLOYMENT_TARGET: '14.2'
+    SWIFT_VERSION: '5.0'
+    CLANG_CXX_LANGUAGE_STANDARD: c++20
+    ARCHS: arm64
+    CODE_SIGN_IDENTITY: '-'
+    CODE_SIGN_STYLE: Manual
+    ENABLE_HARDENED_RUNTIME: YES
+    HEADER_SEARCH_PATHS: '$(SRCROOT)/ThirdParty/OctopusEAX/src $(SRCROOT)/Sources/DSP $(SRCROOT)/Sources/AudioEngine'
+targets:
+  NOIR Audio:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources
+        excludes: [Resources]
+      - path: Sources/Resources
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: audio.noir.studio
+        PRODUCT_NAME: NOIR Audio
+        SWIFT_OBJC_BRIDGING_HEADER: Sources/AudioEngine/NoirBridge.h
+        INFOPLIST_FILE: Sources/App/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Sources/App/Noir.entitlements
+    dependencies:
+      - sdk: CoreAudio.framework
+      - sdk: AudioToolbox.framework
+      - sdk: AVFoundation.framework
+      - sdk: Accelerate.framework
+      - sdk: AppKit.framework
+      - sdk: ScreenCaptureKit.framework
+schemes:
+  NOIR Audio:
+    build:
+      targets:
+        NOIR Audio: all
+    run:
+      config: Debug

@@ -1,0 +1,16 @@
+Build/
+dist/
+.DS_Store
+*.xcuserstate
+xcuserdata/
+.build/
+Tests/Results/*.wav
+Tests/Results/*.aiff
+ThirdParty/*/.git/
+Website/public/downloads/
+Website/.vercel/
+Website/test-results/
+**/__pycache__/
+
+windows-ui-smoke.log
+Tests/Results/*.json

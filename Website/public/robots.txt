@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /downloads/
+
+Sitemap: https://noir-audio-orpin.vercel.app/sitemap.xml
