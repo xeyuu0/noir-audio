@@ -41,7 +41,7 @@ async function capture(name) {
   await page.screenshot({ path: path.join(output, `${name}-hero.png`) });
   await page.screenshot({ path: path.join(output, `${name}.png`), fullPage: true });
 }
-const routes = ['/', '/studio', '/effects', '/routing', '/download', '/install', '/release'];
+const routes = ['/', '/studio', '/effects', '/routing', '/download', '/install', '/release', '/windows'];
 try {
   check((await page.goto(base)).ok(), 'Homepage responds successfully');
   await settle();
@@ -164,7 +164,7 @@ try {
   }
   const sitemap = await context.request.get(base + '/sitemap.xml');
   const xml = await sitemap.text();
-  check(routes.every(route => xml.includes('https://noir-audio-orpin.vercel.app' + route + '</loc>')), 'Sitemap includes all seven public pages');
+  check(routes.every(route => xml.includes('https://noir-audio-orpin.vercel.app' + route + '</loc>')), 'Sitemap includes all eight public pages');
 
   const noJS = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 375, height: 900 } });
   const fallback = await noJS.newPage();
@@ -191,8 +191,14 @@ try {
     const received = page.waitForEvent('download');
     await page.locator('.download-app').click();
     const download = await received;
-    check(download.suggestedFilename() === 'NOIR-Audio-0.1.0-macOS-arm64.zip', 'Download button starts the real app ZIP download');
+    check(download.suggestedFilename() === 'NOIR-Audio-0.1.0-macOS-arm64.dmg', 'Mac button starts the real disk image download');
     check(await download.failure() === null, 'Browser download finishes successfully');
+    const windowsReceived = page.waitForEvent('download');
+    await page.locator('.download-windows').click();
+    const windowsDownload = await windowsReceived;
+    check(windowsDownload.suggestedFilename() === 'NOIR-Audio-0.1.0-Windows-x64-Setup.exe', 'Windows button downloads the actual setup installer');
+    check(await windowsDownload.failure() === null, 'Windows setup download completes');
+    check(await page.locator('footer a[href="https://github.com/xeyuu0/noir-audio"]').count() === 1, 'Footer links to the published source repository');
   }
   check(errors.length === 0, `No browser JavaScript or console errors (${errors.join('; ')})`);
   console.log(`RESULT ${checks} website checks passed against ${base}`);

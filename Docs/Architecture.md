@@ -58,3 +58,8 @@ Audio generation tokens cancel outstanding microphone-permission completions aft
 EncoderInput uses nonblocking pipe writes, a two-second pending-PCM limit and a three-second progress timeout. Parent copies of child-only pipe ends are closed so termination produces EOF. UI telemetry updates are limited to four per second. SHOUTcast frames its OK2 response using bytes: CRLF is a single Swift Character, so searching the String for a lone LF does not work.
 
 Secure Icecast uses FFmpeg's underlying HTTP PUT transport directly, since its Icecast wrapper drops TLS/CA options. Server certificate and hostname verification stay enabled; private servers may use an explicitly selected PEM authority. RTMPS passes those verification options to its TLS transport. Temporary test certificates are confined to ignored Build files.
+
+
+## Windows port and shared core
+
+`Sources/AudioEngine/MixerCore.hpp` owns platform-independent channels, buses, clips, deferred effects reclamation and the render routine. The Core Audio backend derives its Engine from that core. `Windows/src/Wasapi.cpp` owns event-driven WASAPI streams on a dedicated COM thread; each endpoint uses the shared adaptive resampler. Win32 controls are created in App.cpp, with serial preparation and file workers separate from audio servicing. Media Foundation decodes clips and exports AAC. WAV recording/recovery and replay have portable tests. Streaming uses a supervised FFmpeg child with explicitly inherited pipe handles, bounded overlapped writes, cancellation and a kill-on-close job. No browser runtime or macOS driver is used in the Windows application. See Windows/README.md for differences and build instructions.

@@ -8,13 +8,14 @@ ROOT = Path(__file__).resolve().parent
 PUBLIC = ROOT / 'public'
 ORIGIN = 'https://noir-audio-orpin.vercel.app'
 PAGES = {
-    'index': ('NOIR Audio — Sound, on your terms.', 'A native audio studio for Mac. Shape your voice, build your mix, and send it wherever it belongs.', 'home'),
+    'index': ('NOIR Audio — Sound, on your terms.', 'A native audio studio for Mac and Windows. Shape your voice, build your mix, and send it wherever it belongs.', 'home'),
     'studio': ('The studio — NOIR Audio', 'Mix, trigger clips, record, and replay in a focused native macOS audio workspace.', 'studio'),
     'effects': ('Voice & effects — NOIR Audio', 'Explore 15 reverb environments, 42 voice masks, and a reorderable voice processing chain.', 'effects'),
     'routing': ('Audio routing — NOIR Audio', 'Connect microphones, apps, clips, and virtual audio devices through four independent stereo buses.', 'routing'),
-    'download': ('Download for Mac — NOIR Audio', 'Download the NOIR Audio 0.1.0 Apple Silicon preview, virtual audio drivers, matching source, and checksums.', 'download'),
+    'download': ('Download for Mac & Windows — NOIR Audio', 'Download NOIR Audio for Apple Silicon and Windows x64, with installers, matching source, and checksums.', 'download'),
     'install': ('Getting started — NOIR Audio', 'Install NOIR Audio, set up its virtual devices, and route your microphone, clips, and applications.', 'guide'),
     'release': ('Release notes — NOIR Audio', 'What is included, tested, and still unverified in the NOIR Audio 0.1.0 development preview.', 'guide'),
+    'windows': ('Windows guide — NOIR Audio', 'Install the Windows x64 preview and route microphones, clips, and applications with WASAPI.', 'guide'),
     '404': ('Signal not found — NOIR Audio', 'This page is not connected. Return to the NOIR Audio studio.', 'error'),
 }
 
@@ -32,7 +33,7 @@ def header(active):
 
 def footer():
     return f'''<footer class="site-footer wrap"><div class="footer-top">{brand()}<p>Sound, with intention.</p><a class="back-top" href="#main">Back to top <span aria-hidden="true">↑</span></a></div>
-<div class="footer-bottom"><p>© 2026 NOIR Audio contributors<br><span>Independent software. Open source.</span></p><nav aria-label="Footer navigation"><a href="/install">Getting started</a><a href="/release">Release notes</a><a href="/downloads/NOIR-Audio-0.1.0-source.tar.gz" download>Source code ↗</a></nav><span class="footer-caption">MADE FOR macOS</span></div></footer>'''
+<div class="footer-bottom"><p>© 2026 NOIR Audio contributors<br><span>Independent software. Open source.</span></p><nav aria-label="Footer navigation"><a href="/install">Getting started</a><a href="/release">Release notes</a><a href="https://github.com/xeyuu0/noir-audio">GitHub ↗</a></nav><span class="footer-caption">MAC + WINDOWS</span></div></footer>'''
 
 def sculpture():
     """Original projected wave sculpture. Static SVG; motion is pointer-driven in CSS."""
@@ -63,9 +64,9 @@ def build():
     for name,(title,description,active) in PAGES.items():
         route='/' if name == 'index' else '/'+name
         body=(ROOT/'pages'/f'{name}.html').read_text()
-        document=name in ('install','release')
+        document=name in ('install','release','windows')
         if document:
-            body='<div class="document-layout wrap"><aside class="document-nav"><p class="eyebrow">THE FIELD GUIDE</p><a href="/install"'+(' aria-current="page"' if name=='install' else '')+'>Getting started</a><a href="/release"'+(' aria-current="page"' if name=='release' else '')+'>Release notes</a><a href="/download">Downloads ↗</a><span>NOIR AUDIO · 0.1.0</span></aside><article class="document">'+body+'</article></div>'
+            body='<div class="document-layout wrap"><aside class="document-nav"><p class="eyebrow">THE FIELD GUIDE</p><a href="/install"'+(' aria-current="page"' if name=='install' else '')+'>Mac setup</a><a href="/windows"'+(' aria-current="page"' if name=='windows' else '')+'>Windows setup</a><a href="/release"'+(' aria-current="page"' if name=='release' else '')+'>Release notes</a><a href="/download">Downloads ↗</a><span>NOIR AUDIO · 0.1.0</span></aside><article class="document">'+body+'</article></div>'
         html=f'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#050505">
 <title>{escape(title)}</title><meta name="description" content="{escape(description)}"><meta property="og:title" content="{escape(title)}"><meta property="og:description" content="{escape(description)}"><meta property="og:type" content="website"><meta property="og:url" content="{ORIGIN+route}"><meta property="og:image" content="{ORIGIN}/assets/mixer.png"><link rel="canonical" href="{ORIGIN+route}">

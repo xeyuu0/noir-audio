@@ -24,7 +24,7 @@ System capture cannot use an output endpoint assigned to a NOIR bus, avoiding di
 - Icecast MP3 and RTMP(S) AAC broadcasting through an explicitly selected external `ffmpeg.exe`, with bounded pipes and cancelable process supervision. TLS certificates are verified. Credentials are never saved to sessions or logs. The status reports encoder delivery; it does not pretend to confirm remote server acceptance.
 - Session import/export, seven presets, configurable global shortcuts (opt-in) and local shortcuts. Sessions and clips are kept in `%LOCALAPPDATA%\NOIR Audio`.
 
-SHOUTcast v1, ASIO, native Windows virtual drivers, Intel/ARM Windows packages and automatic device/broadcast reconnection are not included. Windows N editions need the Media Feature Pack. Codec availability follows the installed Windows Media Foundation codecs. Mac and Windows presets use different device identifiers and are not interchangeable. Exported sessions refer to clips already present in the managed Clips folder; they are not self-contained clip archives.
+SHOUTcast v1, ASIO, native Windows virtual drivers, 32-bit Windows and Windows on ARM packages and automatic device/broadcast reconnection are not included. Windows N editions need the Media Feature Pack. Codec availability follows the installed Windows Media Foundation codecs. Mac and Windows presets use different device identifiers and are not interchangeable. Exported sessions refer to clips already present in the managed Clips folder; they are not self-contained clip archives.
 
 ## Build on Windows
 

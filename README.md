@@ -65,10 +65,13 @@ The audio integration test routes a low-level generated tone into an internal di
 ## Packaging and licenses
 
 ```sh
+bash Scripts/build-windows.sh
+bash Scripts/package-windows.sh
+bash Scripts/package-macos-dmg.sh
 bash Scripts/package.sh
 ```
 
-This creates an application ZIP, complete source archive and SHA-256 checksums beside the driver installer. The local app and driver bundles use ad-hoc signatures; the installer is unsigned and artifacts are **not notarized**. Developer ID Application/Installer credentials and an Apple notarization account are required for a public signed release. No such signing identity was available for this build.
+These scripts create a Mac disk image and app ZIP, a Windows per-user setup executable and portable ZIP, the matching source archive, and SHA-256 checksums. The Windows packaging script requires NSIS. The local app and driver bundles use ad-hoc signatures; the installer is unsigned and artifacts are **not notarized**. Developer ID Application/Installer credentials and an Apple notarization account are required for a public signed release. No such signing identity was available for this build.
 
 NOIR's original code is GPL-3.0-or-later. BlackHole's original GPL license and OctopusEAX's MIT license accompany the full source and the app. Distribute the matching source archive and notices with binary releases. See [source audit](Docs/SourceAudit.md) for upstream commits and porting details. LadioCast is a functional reference; its proprietary code and assets are not used.
 

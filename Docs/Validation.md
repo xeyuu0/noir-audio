@@ -70,3 +70,8 @@ The final installed-loopback stability run completed 1,800 seconds (30 minutes):
 ## Reproducing validation
 
 Use the README scripts from a logged-in macOS session with Core Audio access. UI checks need existing Accessibility access and audio stopped in the app. Installed-loopback checks need unused channels 15–16. Native tests do not capture a physical microphone or play test audio to speakers. Temporary TLS certificates, dummy credentials and generated audio stay in ignored Build directories and are excluded from release artifacts.
+
+
+## Liquid Glass / shared-core regression — 2 November 2026
+
+The redesigned packaged Mac app passed three launch cycles covering all nine sections, setup open/dismiss and normal quit. Shared mixer extraction passed 28 DSP/core checks and the same 28 under AddressSanitizer/UndefinedBehaviorSanitizer. Native integration passed, including a 15-second silent physical-output run with zero underruns or dropped frames. Actual window captures were refreshed for the website. This does not replace the hardware and distribution limitations above.

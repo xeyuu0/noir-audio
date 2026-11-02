@@ -33,3 +33,8 @@ Full-page and viewport screenshots were reviewed at desktop and mobile sizes. Te
 The matching application source was previously extracted into a fresh directory and `Scripts/build.sh` completed successfully, with strict ad-hoc signature verification. Native application code has not changed during this website redesign. Package inspection verified both arm64 driver identities/signatures and the app ZIP's installer, icon, and license notices without changing system drivers.
 
 Native application validation is recorded in `Docs/Validation.md`, including the completed 30-minute installed-loopback run with zero new underruns or dropped frames. The downloadable app remains an unnotarized development preview; receiving-app, physical-hardware, signing, and clean-machine checks are explicitly listed as unverified.
+
+
+## Mac / Windows download update — 2 November 2026
+
+The updated eight-page public site adds paired Mac and Windows download cards, a separate Windows setup guide, GitHub links, and screenshots from the native Liquid Glass Mac build. Local browser acceptance: **217 checks passed**, including all routes, six viewport widths, native page transitions, reduced motion, keyboard controls, no-JavaScript fallback, SHA-256 and byte matching for all six artifacts, and real browser downloads of the Mac disk image and Windows setup. Production verification follows deployment.
