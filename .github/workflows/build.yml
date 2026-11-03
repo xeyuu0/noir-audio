@@ -37,6 +37,7 @@ jobs:
             Build/windows/Release/*.exe
             Build/windows/Testing/Temporary/*.log
             windows-ui-smoke.log
+            windows-ui-captures/*.png
           retention-days: 14
   portable:
     runs-on: macos-15
