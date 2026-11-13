@@ -22,7 +22,7 @@ import CoreAudio
         ] {
             var rejected = false
             do { try interrupted!.write(input, frames: count) } catch { rejected = true }
-            check(rejected, "WAV writer rejects \\(label) without trapping")
+            check(rejected, "WAV writer rejects \(label) without trapping")
         }
         try interrupted!.write(samples, frames: 48000); interrupted = nil // Termination before finish/header update.
         let recovered = try RecoverableWAV.recover(in: journals)
