@@ -23,8 +23,18 @@ final class RecoverableWAV {
     }
     func write(_ samples: [Float], frames: Int) throws {
         guard let handle else { throw NoirError.message("The recording is already closed.") }
+        // Reject malformed frame counts before multiplying or indexing the interleaved samples.
+        // A short buffer must fail cleanly rather than trapping in the recorder worker.
+        guard frames >= 0, frames <= samples.count / 2 else {
+            throw NoirError.message("Recording input has an invalid frame count or insufficient stereo samples.")
+        }
+        guard frames <= (Int(UInt32.max) - 36) / 6 else {
+            throw NoirError.message("The WAV reached its 4 GB size limit. Start a new take.")
+        }
         let size = frames * 2 * 3
-        guard dataBytes + UInt64(size) <= UInt32.max - 36 else { throw NoirError.message("The WAV reached its 4 GB size limit. Start a new take.") }
+        guard dataBytes + UInt64(size) <= UInt64(UInt32.max) - 36 else {
+            throw NoirError.message("The WAV reached its 4 GB size limit. Start a new take.")
+        }
         var pcm = Data(count: size)
         pcm.withUnsafeMutableBytes { raw in
             let bytes = raw.bindMemory(to: UInt8.self)

@@ -14,6 +14,16 @@ import CoreAudio
         for frame in 0..<48000 { let sample = Float(sin(Double(frame) * (2.0 * Double.pi * 440.0 / 48000.0)) * 0.1); samples[frame * 2] = sample; samples[frame * 2 + 1] = sample }
         let wav = root.appendingPathComponent("take.wav"), journals = root.appendingPathComponent("Recovery")
         var interrupted: RecoverableWAV? = try RecoverableWAV(destination: wav, journalDirectory: journals)
+        // Malformed producer input must not crash or corrupt an otherwise valid take.
+        for (input, count, label) in [
+            ([Float](repeating: 0, count: 2), -1, "negative frames"),
+            ([Float](repeating: 0, count: 2), 2, "insufficient stereo samples"),
+            ([Float](repeating: 0, count: 2), Int.max, "overflowing frame count")
+        ] {
+            var rejected = false
+            do { try interrupted!.write(input, frames: count) } catch { rejected = true }
+            check(rejected, "WAV writer rejects \(label) without trapping")
+        }
         try interrupted!.write(samples, frames: 48000); interrupted = nil // Termination before finish/header update.
         let recovered = try RecoverableWAV.recover(in: journals)
         let file = try AVAudioFile(forReading: wav)
