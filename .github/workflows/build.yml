@@ -52,3 +52,19 @@ jobs:
       - run: cmake -S . -B Build/portable -DCMAKE_BUILD_TYPE=Release
       - run: cmake --build Build/portable --parallel 4
       - run: ctest --test-dir Build/portable --output-on-failure
+
+  wav-writer:
+    runs-on: macos-15
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Compile production WAV writer with standalone regression harness
+        run: |
+          mkdir -p Build
+          xcrun swiftc -swift-version 5 -parse-as-library \
+            Sources/Recording/RecoverableWAV.swift Tests/RecoverableWAVSmoke.swift \
+            -o Build/RecoverableWAVSmoke
+      - name: Validate malformed input, valid output and interrupted recovery
+        run: Build/RecoverableWAVSmoke
