@@ -33,7 +33,8 @@ struct RecoverableWAVSmoke {
         expect(bytes.count == 44 + 12, "valid stereo frames remain writable")
         expect(String(data: bytes.prefix(4), encoding: .ascii) == "RIFF", "RIFF header retained")
         expect(String(data: bytes[8..<12], encoding: .ascii) == "WAVE", "WAVE header retained")
-        expect(try RecoverableWAV.recover(in: journals).isEmpty, "completed take has no recovery journal")
+        let completedRecovery = try RecoverableWAV.recover(in: journals)
+        expect(completedRecovery.isEmpty, "completed take has no recovery journal")
 
         let interruptedURL = root.appendingPathComponent("interrupted.wav")
         var interrupted: RecoverableWAV? = try RecoverableWAV(destination: interruptedURL, journalDirectory: journals)
@@ -41,7 +42,8 @@ struct RecoverableWAVSmoke {
         interrupted = nil
         let recovered = try RecoverableWAV.recover(in: journals)
         expect(recovered == [interruptedURL], "interrupted take recovered")
-        expect((try Data(contentsOf: interruptedURL)).count == 50, "recovered take retains complete stereo frame")
+        let recoveredBytes = try Data(contentsOf: interruptedURL)
+        expect(recoveredBytes.count == 50, "recovered take retains complete stereo frame")
         print("PASS standalone RecoverableWAV smoke tests")
     }
 }
