@@ -93,6 +93,20 @@ struct RecoverableWAVSmoke {
         let renamedBytes = try Data(contentsOf: collisionRecovered[0])
         expect(renamedBytes.count == 50, "renamed recovered take is intact")
 
+        // One corrupt journal must not block recovery of an independent valid take.
+        let mixedURL = root.appendingPathComponent("mixed.wav")
+        var mixed: RecoverableWAV? = try RecoverableWAV(destination: mixedURL, journalDirectory: journals)
+        try mixed!.write([0.2, -0.2], frames: 1)
+        mixed = nil
+        let corruptJournal = journals.appendingPathComponent("corrupt.json")
+        let corruptBytes = Data("{not-valid-json".utf8)
+        try corruptBytes.write(to: corruptJournal)
+        let mixedRecovered = try RecoverableWAV.recover(in: journals)
+        expect(mixedRecovered == [mixedURL], "valid take recovered despite malformed neighboring journal")
+        let retainedCorruptBytes = try Data(contentsOf: corruptJournal)
+        expect(retainedCorruptBytes == corruptBytes, "malformed journal retained for inspection")
+        expect(try RecoverableWAV.recover(in: journals).isEmpty, "repeat recovery does not duplicate a completed take")
+
         print("PASS standalone RecoverableWAV smoke tests")
     }
 }
