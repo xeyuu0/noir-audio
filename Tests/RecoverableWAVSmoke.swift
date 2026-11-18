@@ -93,6 +93,33 @@ struct RecoverableWAVSmoke {
         let renamedBytes = try Data(contentsOf: collisionRecovered[0])
         expect(renamedBytes.count == 50, "renamed recovered take is intact")
 
+        // One corrupt journal must not block recovery of an independent valid take.
+        let mixedURL = root.appendingPathComponent("mixed.wav")
+        var mixed: RecoverableWAV? = try RecoverableWAV(destination: mixedURL, journalDirectory: journals)
+        try mixed!.write([0.2, -0.2], frames: 1)
+        mixed = nil
+        let corruptJournal = journals.appendingPathComponent("corrupt.json")
+        let corruptBytes = Data("{not-valid-json".utf8)
+        try corruptBytes.write(to: corruptJournal)
+        let mixedRecovered = try RecoverableWAV.recover(in: journals)
+        expect(mixedRecovered == [mixedURL], "valid take recovered despite malformed neighboring journal")
+        let retainedCorruptBytes = try Data(contentsOf: corruptJournal)
+        expect(retainedCorruptBytes == corruptBytes, "malformed journal retained for inspection")
+        let repeatRecovery = try RecoverableWAV.recover(in: journals)
+        expect(repeatRecovery.isEmpty, "repeat recovery does not duplicate a completed take")
+
+        // A .json directory cannot be read as journal bytes; this is an I/O
+        // failure and must not be treated as a merely malformed journal.
+        let unreadableJournal = journals.appendingPathComponent("unreadable.json")
+        try FileManager.default.createDirectory(at: unreadableJournal, withIntermediateDirectories: false)
+        var propagatedReadFailure = false
+        do {
+            _ = try RecoverableWAV.recover(in: journals)
+        } catch {
+            propagatedReadFailure = true
+        }
+        expect(propagatedReadFailure, "journal filesystem read failures propagate")
+
         print("PASS standalone RecoverableWAV smoke tests")
     }
 }

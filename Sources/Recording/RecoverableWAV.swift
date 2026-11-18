@@ -65,8 +65,18 @@ final class RecoverableWAV {
         guard FileManager.default.fileExists(atPath: directory.path) else { return [] }
         var recovered: [URL] = []
         for entry in try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) where entry.pathExtension == "json" {
-            let record = try JSONDecoder().decode(Journal.self, from: Data(contentsOf: entry))
-            guard record.partial == record.destination.deletingPathExtension().appendingPathExtension("partial.wav") else { throw NoirError.message("An interrupted-recording journal has an invalid path.") }
+            // A damaged or unrelated journal must not prevent recovery of other takes.
+            // Leave invalid entries untouched so they can be inspected or repaired.
+            // Filesystem read failures are real I/O errors, not malformed JSON.
+            // Keep propagating those errors so the caller can report them.
+            let journalData = try Data(contentsOf: entry)
+            let record: Journal
+            do {
+                record = try JSONDecoder().decode(Journal.self, from: journalData)
+            } catch {
+                continue
+            }
+            guard record.partial == record.destination.deletingPathExtension().appendingPathExtension("partial.wav") else { continue }
             if !FileManager.default.fileExists(atPath: record.partial.path) {
                 if FileManager.default.fileExists(atPath: record.destination.path) { try FileManager.default.removeItem(at: entry) }
                 continue
