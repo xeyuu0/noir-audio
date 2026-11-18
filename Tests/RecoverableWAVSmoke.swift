@@ -105,7 +105,8 @@ struct RecoverableWAVSmoke {
         expect(mixedRecovered == [mixedURL], "valid take recovered despite malformed neighboring journal")
         let retainedCorruptBytes = try Data(contentsOf: corruptJournal)
         expect(retainedCorruptBytes == corruptBytes, "malformed journal retained for inspection")
-        expect(try RecoverableWAV.recover(in: journals).isEmpty, "repeat recovery does not duplicate a completed take")
+        let repeatRecovery = try RecoverableWAV.recover(in: journals)
+        expect(repeatRecovery.isEmpty, "repeat recovery does not duplicate a completed take")
 
         print("PASS standalone RecoverableWAV smoke tests")
     }
