@@ -108,6 +108,18 @@ struct RecoverableWAVSmoke {
         let repeatRecovery = try RecoverableWAV.recover(in: journals)
         expect(repeatRecovery.isEmpty, "repeat recovery does not duplicate a completed take")
 
+        // A .json directory cannot be read as journal bytes; this is an I/O
+        // failure and must not be treated as a merely malformed journal.
+        let unreadableJournal = journals.appendingPathComponent("unreadable.json")
+        try FileManager.default.createDirectory(at: unreadableJournal, withIntermediateDirectories: false)
+        var propagatedReadFailure = false
+        do {
+            _ = try RecoverableWAV.recover(in: journals)
+        } catch {
+            propagatedReadFailure = true
+        }
+        expect(propagatedReadFailure, "journal filesystem read failures propagate")
+
         print("PASS standalone RecoverableWAV smoke tests")
     }
 }
