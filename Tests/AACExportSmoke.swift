@@ -50,7 +50,8 @@ struct AACExportSmoke {
         do { try AudioExport.aac(input: invalid, destination: destination) }
         catch { failed = true }
         expect(failed, "invalid source fails export")
-        expect(try Data(contentsOf: destination) == sentinel, "failed export preserves existing destination")
+        let preserved = try Data(contentsOf: destination)
+        expect(preserved == sentinel, "failed export preserves existing destination")
         let leftovers = try FileManager.default.contentsOfDirectory(atPath: root.path)
             .filter { $0.hasPrefix(".noir-export-") }
         expect(leftovers.isEmpty, "temporary export files cleaned after failure")
