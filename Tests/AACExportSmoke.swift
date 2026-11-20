@@ -27,15 +27,43 @@ struct AACExportSmoke {
 
         let format = AVAudioFormat(standardFormatWithSampleRate: 48000, channels: 2)!
         let input = root.appendingPathComponent("input.wav")
-        let writer = try AVAudioFile(forWriting: input, settings: format.settings)
-        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 4096)!
-        buffer.frameLength = 4096
-        for channel in 0..<2 {
-            for frame in 0..<4096 {
-                buffer.floatChannelData![channel][frame] = Float(sin(Double(frame) * 2 * .pi * 440 / 48000)) * 0.1
+        let pcmSettings: [String: Any] = [
+            AVFormatIDKey: kAudioFormatLinearPCM,
+            AVSampleRateKey: 48000,
+            AVNumberOfChannelsKey: 2,
+            AVLinearPCMBitDepthKey: 32,
+            AVLinearPCMIsFloatKey: true,
+            AVLinearPCMIsBigEndianKey: false,
+            AVLinearPCMIsNonInterleaved: false
+        ]
+
+        // Close the fixture writer before opening the same file for reading.
+        // AVAudioFile finalizes the WAV length when its writer is released.
+        do {
+            let writer = try AVAudioFile(
+                forWriting: input,
+                settings: pcmSettings,
+                commonFormat: .pcmFormatFloat32,
+                interleaved: false
+            )
+            let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 4096)!
+            buffer.frameLength = 4096
+            for channel in 0..<2 {
+                for frame in 0..<4096 {
+                    buffer.floatChannelData![channel][frame] =
+                        Float(sin(Double(frame) * 2 * .pi * 440 / 48000)) * 0.1
+                }
             }
+            try writer.write(from: buffer)
         }
-        try writer.write(from: buffer)
+
+        let inputFrames: AVAudioFramePosition
+        do {
+            let fixture = try AVAudioFile(forReading: input)
+            inputFrames = fixture.length
+        }
+        expect(inputFrames == 4096, "input WAV fixture is finalized with all frames")
+
         let destination = root.appendingPathComponent("output.m4a")
         try AudioExport.aac(input: input, destination: destination)
         let exported = try AVAudioFile(forReading: destination)
