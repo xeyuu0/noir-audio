@@ -2,6 +2,9 @@
 #pragma once
 #include "AudioFormat.hpp"
 #include <filesystem>
+#include <string>
+#include <utility>
+#include <vector>
 #include <cstdio>
 #include <cerrno>
 #include <fcntl.h>
@@ -49,6 +52,36 @@ public:
     uint64_t count()const{return frames;}
     static std::filesystem::path recover(const std::filesystem::path& p){auto size=std::filesystem::file_size(p);if(size<44||size>UINT32_MAX)throw std::runtime_error("Not a recoverable NOIR WAV");FILE* f=updateFile(p);if(!f)throw std::runtime_error("Could not open partial recording");std::array<uint8_t,44> h{};bool read=fread(h.data(),1,44,f)==44;auto expected=header(0);bool valid=read&&memcmp(h.data(),expected.data(),4)==0&&memcmp(h.data()+8,expected.data()+8,32)==0;if(!valid){fclose(f);throw std::runtime_error("Partial recording format is not a NOIR 48 kHz stereo PCM24 take");}uint32_t data=uint32_t((size-44)/6*6);h=header(data);if(fseek(f,0,SEEK_SET)||fwrite(h.data(),1,44,f)!=44){fclose(f);throw std::runtime_error("Could not repair recording header");}try{syncFile(f);}catch(...){fclose(f);throw;}fclose(f);std::filesystem::resize_file(p,44+data);auto out=p;out.replace_extension(".recovered.wav");for(int i=1;std::filesystem::exists(out);++i){out=p;out.replace_extension(".recovered-"+std::to_string(i)+".wav");}std::filesystem::rename(p,out);return out;}
 };
+struct WaveRecoveryFailure { std::filesystem::path partial; std::string reason; };
+struct WaveRecoveryReport {
+    std::vector<std::filesystem::path> recovered;
+    std::vector<WaveRecoveryFailure> failures;
+};
+
+// Recover each NOIR partial independently. One damaged take must not prevent
+// other interrupted recordings from being restored; failed files stay in place.
+inline WaveRecoveryReport recoverWavPartials(const std::filesystem::path& directory) {
+    WaveRecoveryReport report;
+    for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+        const auto name = entry.path().filename().wstring();
+        if (name.rfind(L"NOIR_", 0) != 0 || !name.ends_with(L".partial.wav")) continue;
+
+        std::error_code statusError;
+        const auto status = entry.symlink_status(statusError);
+        if (statusError) {
+            report.failures.push_back({entry.path(), statusError.message()});
+            continue;
+        }
+        if (!std::filesystem::is_regular_file(status)) continue;
+
+        try {
+            report.recovered.push_back(WaveFile::recover(entry.path()));
+        } catch (const std::exception& error) {
+            report.failures.push_back({entry.path(), error.what()});
+        }
+    }
+    return report;
+}
 class Replay {
     std::vector<Stereo> samples;size_t head=0,used=0;
 public:
