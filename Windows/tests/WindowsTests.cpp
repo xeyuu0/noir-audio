@@ -5,8 +5,7 @@
 #include "Session.hpp"
 #include <iostream>
 #include <chrono>
-#include <fstream>
-#include <iterator>
+#include <array>
 using namespace noir;using namespace noir::win;
 int main(int argc,char** argv){int passed=0;auto check=[&](bool value,const char* text){if(!value)throw std::runtime_error(text);std::cout<<"PASS "<<++passed<<" "<<text<<'\n';};try{Apartment apartment;
 if(argc>1&&std::string(argv[1])=="--devices"){for(auto& d:endpoints())std::cout<<(d.input?"INPUT ":"OUTPUT ")<<utf8(d.name)<<"\n";return 0;}
