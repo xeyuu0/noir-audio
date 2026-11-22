@@ -33,6 +33,24 @@ std::string Recorder::status(){std::lock_guard lock(mutex);return message;}
 std::filesystem::path Recorder::lastTake(){std::lock_guard lock(mutex);return last;}
 void Recorder::start(const std::filesystem::path& path){post([this,path]{if(writer)return;Stereo stale;while(core.recordRing.pop(stale)){}target=path;writer=std::make_unique<WaveFile>(path);frames=0;recording=true;setStatus("Recording stereo 48 kHz / 24-bit WAV…");});}
 void Recorder::stop(){post([this]{if(writer){size_t pending=core.recordRing.available();Stereo sample;while(pending--&&core.recordRing.pop(sample)){replay.push(sample);writer->append(&sample,1);frames++;}writer->finish();writer.reset();recording=false;{std::lock_guard lock(mutex);last=target;}setStatus("Take saved. Ready for AAC export.");}});}
+void Recorder::recoverPartials(const std::filesystem::path& directory,std::function<void(WaveRecoveryReport,std::string)> completion){
+    // Run recovery on the same command queue as start/stop. This makes the
+    // writer check and filesystem repair mutually exclusive with recording.
+    post([this,directory,completion=std::move(completion)]() mutable {
+        WaveRecoveryReport report;
+        std::string error;
+        if(writer){
+            error="Stop recording before recovering interrupted takes.";
+        }else{
+            try{report=recoverWavPartials(directory);}
+            catch(const std::exception& exception){error=exception.what();}
+        }
+        if(completion){
+            try{completion(std::move(report),std::move(error));}
+            catch(...){setStatus("Could not report recording recovery results.");}
+        }
+    });
+}
 void Recorder::resetReplay(){post([this]{replay.clear();Stereo stale;while(core.recordRing.pop(stale)){};});}
 void Recorder::saveReplay(const std::filesystem::path& path,int seconds){post([this,path,seconds]{auto samples=std::make_shared<std::vector<Stereo>>(replay.snapshot(seconds));if(samples->empty())throw std::runtime_error("Start audio to fill the replay buffer first");files.post([this,path,samples]{try{WaveFile out(path);out.append(samples->data(),samples->size());out.finish();{std::lock_guard lock(mutex);last=path;}setStatus("Replay saved.");}catch(const std::exception&e){setStatus(e.what());}});});}
 void Recorder::run(){auto checkpoint=std::chrono::steady_clock::now();std::array<Stereo,4096> block{};while(!done){try{std::deque<std::function<void()>> jobs;{std::lock_guard lock(mutex);jobs.swap(commands);}for(auto& job:jobs)job();size_t n=0;while(n<block.size()&&core.recordRing.pop(block[n])){replay.push(block[n]);++n;}if(writer&&n){writer->append(block.data(),n);frames+=n;}if(writer&&std::chrono::steady_clock::now()-checkpoint>std::chrono::seconds(1)){writer->checkpoint();checkpoint=std::chrono::steady_clock::now();}if(!n)std::this_thread::sleep_for(std::chrono::milliseconds(4));}
