@@ -31,7 +31,9 @@ private:
     std::thread thread;
 public:
     Recorder(MixerCore& engine,Worker& io);~Recorder();
-    void start(const std::filesystem::path& path);void stop();void saveReplay(const std::filesystem::path& path,int seconds);void resetReplay();
+    void start(const std::filesystem::path& path);void stop();
+    void recoverPartials(const std::filesystem::path& directory,std::function<void(WaveRecoveryReport,std::string)> completion);
+    void saveReplay(const std::filesystem::path& path,int seconds);void resetReplay();
     std::string status();std::filesystem::path lastTake();
 };
 }
